@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>History — UAL</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#07000f;font-family:system-ui,sans-serif;min-height:100vh;padding:20px 16px 90px;}
+.page-header{margin-bottom:20px;}
+.page-header h1{font-size:20px;font-weight:900;color:#fff;}
+.page-header p{font-size:11px;color:#9b90b0;margin-top:2px;font-style:italic;}
+/* STATS ROW */
+.stats-row{display:flex;gap:10px;margin-bottom:16px;}
+.stat-card{flex:1;background:#160028;border-radius:12px;padding:12px;text-align:center;}
+.stat-val{font-size:1.6rem;font-weight:900;color:#c084fc;}
+.stat-lbl{font-size:10px;color:#9b90b0;margin-top:2px;text-transform:uppercase;letter-spacing:1px;}
+/* HISTORY LIST */
+.hist-item{background:#160028;border:1px solid #2a1845;border-radius:14px;padding:13px 16px;margin-bottom:8px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;transition:border-color .2s;}
+.hist-item.has-entry{border-color:rgba(168,85,247,.4);}
+.hist-item:active{opacity:.8;}
+.hist-date-col{min-width:42px;text-align:center;flex-shrink:0;}
+.hist-day-num{font-size:20px;font-weight:900;color:#5a5070;line-height:1;}
+.hist-item.has-entry .hist-day-num{color:#c084fc;}
+.hist-month{font-size:9px;color:#5a5070;text-transform:uppercase;letter-spacing:1px;}
+.hist-divider{width:1px;background:#2a1845;align-self:stretch;flex-shrink:0;}
+.hist-item.has-entry .hist-divider{background:rgba(168,85,247,.4);}
+.dot-row{display:flex;gap:3px;flex-wrap:wrap;}
+.dot{width:8px;height:8px;border-radius:50%;}
+/* DETAIL VIEW */
+.detail-header{background:linear-gradient(135deg,#2e0060,#7c1d3e);padding:20px 16px 16px;margin:-20px -16px 20px;border-radius:0 0 16px 16px;}
+.detail-date{font-size:18px;font-weight:900;color:#fff;margin-bottom:3px;}
+.detail-day{font-size:11px;color:rgba(255,255,255,.6);}
+.acts-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.act-pill{display:flex;align-items:center;gap:4px;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:99px;padding:3px 10px;}
+.sect-label{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#c084fc;margin:16px 0 8px;}
+.content-card{background:#160028;border:1px solid #2a1845;border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+.content-text{font-size:15px;color:#ede8f5;line-height:1.8;white-space:pre-wrap;font-family:Georgia,serif;}
+/* NAV */
+.bot-nav{position:fixed;bottom:0;left:0;right:0;background:#0e0018;border-top:1px solid #2a1845;display:flex;z-index:100;max-width:480px;margin:0 auto;}
+.nav-btn{flex:1;padding:10px 4px 14px;border:none;background:none;font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;border-top:2px solid transparent;text-decoration:none;color:#5a5070;}
+.nav-btn.current{color:#c084fc;border-top-color:#c084fc;}
+.nav-icon{font-size:19px;}
+</style>
+</head>
+<body>
+
+<!-- LIST VIEW -->
+<div id="listView">
+  <div class="page-header">
+    <h1>📖 History</h1>
+    <p>Every day you showed up — written or not.</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" id="statTotal">0</div><div class="stat-lbl">Total Days</div></div>
+    <div class="stat-card"><div class="stat-val" id="statWritten">0</div><div class="stat-lbl">Written</div></div>
+    <div class="stat-card"><div class="stat-val" id="statLetters">0</div><div class="stat-lbl">Letters</div></div>
+  </div>
+
+  <div id="historyList">
+    <div style="text-align:center;color:#5a5070;font-size:13px;padding:40px 0;font-style:italic;">No entries yet. Start writing in Today.</div>
+  </div>
+</div>
+
+<!-- DETAIL VIEW -->
+<div id="detailView" style="display:none;">
+  <button onclick="closeDetail()" style="background:none;border:none;color:#c084fc;font-size:14px;cursor:pointer;margin-bottom:16px;padding:0;display:block;">← Back to History</button>
+
+  <div class="detail-header">
+    <div class="detail-date" id="detailDate"></div>
+    <div class="detail-day" id="detailDay"></div>
+    <div class="acts-row" id="detailActs"></div>
+  </div>
+
+  <div id="detailBody"></div>
+
+  <button id="detailDeleteBtn" onclick="deleteEntry()" style="background:#1a0010;border:1px solid rgba(239,68,68,.3);color:#ef4444;border-radius:10px;font-size:12px;font-weight:700;padding:8px 16px;cursor:pointer;margin-top:8px;">Delete Entry</button>
+</div>
+
+<nav class="bot-nav">
+  <a href="../ual-app" class="nav-btn"><span class="nav-icon">✦</span>Home</a>
+  <div class="nav-btn current"><span class="nav-icon">📖</span>History</div>
+</nav>
+
+<script>
+var START=new Date('2026-03-15'), TOTAL=291;
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var DOT_COLORS={healing:'#a855f7',creative:'#ec4899',journal:'#06b6d4',letter:'#f59e0b'};
+var ACT_LABELS={healing:'Healing Hour',creative:'Creative Practice',journal:'Journal Entry',letter:'Letter Written'};
+var ACT_ICONS={healing:'📖',creative:'✍🏾',journal:'📝',letter:'✉️'};
+
+var SCRIPTURES=[{ref:'Psalm 139:1-6',text:'You have searched me and known me.'},{ref:'Psalm 139:13-16',text:'You knit me together in my mother\'s womb.'},{ref:'Jeremiah 1:4-5',text:'Before I formed you in the womb I knew you.'},{ref:'Isaiah 44:2',text:'The LORD who made you, who formed you from the womb.'},{ref:'Lamentations 5:7',text:'Our ancestors sinned and we bear their punishment.'},{ref:'Ruth 1:16-17',text:'Where you go I will go.'},{ref:'Psalm 27:10',text:'Though my father and mother forsake me, the LORD will receive me.'},{ref:'Psalm 68:5',text:'A father to the fatherless.'},{ref:'Isaiah 49:15',text:'Can a mother forget the baby at her breast?'},{ref:'Isaiah 49:16',text:'I have engraved you on the palms of my hands.'},{ref:'Zephaniah 3:17',text:'He will rejoice over you with singing.'},{ref:'Matthew 5:14-16',text:'You are the light of the world.'},{ref:'Proverbs 29:25',text:'Fear of man will prove to be a snare.'},{ref:'Deuteronomy 31:6',text:'He will never leave you nor forsake you.'},{ref:'Romans 8:38-39',text:'Nothing can separate us from the love of God.'},{ref:'Romans 8:1',text:'There is now no condemnation.'},{ref:'John 8:1-11',text:'Neither do I condemn you.'},{ref:'1 Cor 13:4-7',text:'Love is patient, love is kind.'},{ref:'Psalm 34:18',text:'The LORD is close to the brokenhearted.'},{ref:'Isaiah 43:4',text:'You are precious and honored in my sight.'},{ref:'1 John 4:18',text:'Perfect love drives out fear.'},{ref:'Isaiah 61:1-3',text:'Beauty for ashes.'}];
+
+function gd(k,fb){try{var v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
+function sd(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function isoFriendly(iso){return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});}
+function getDayNumFor(iso){return Math.max(1,Math.min(Math.floor((new Date(iso+'T12:00:00')-START)/86400000)+1,TOTAL));}
+
+var currentISO='';
+
+function renderList(){
+  var logs=gd('ual_logs',{}), entries=gd('ual_entries',{});
+  var allDates={};
+  Object.keys(logs).forEach(function(d){if(logs[d]&&logs[d].length)allDates[d]=1;});
+  Object.keys(entries).forEach(function(d){allDates[d]=1;});
+  var sorted=Object.keys(allDates).sort(function(a,b){return b.localeCompare(a);});
+
+  // stats
+  var written=Object.keys(entries).filter(function(d){return entries[d]&&(entries[d].thoughts||entries[d].promptResponse);}).length;
+  var letters=Object.keys(logs).filter(function(d){return logs[d]&&logs[d].indexOf('letter')>-1;}).length;
+  document.getElementById('statTotal').textContent=sorted.length;
+  document.getElementById('statWritten').textContent=written;
+  document.getElementById('statLetters').textContent=letters;
+
+  if(!sorted.length){
+    document.getElementById('historyList').innerHTML='<div style="text-align:center;color:#5a5070;font-size:13px;padding:40px 0;font-style:italic;">No entries yet. Start writing in Today.</div>';
+    return;
+  }
+
+  var html='';
+  sorted.forEach(function(iso){
+    var entry=entries[iso]||{}, acts=logs[iso]||[];
+    var dt=new Date(iso+'T12:00:00');
+    var dn=entry.dayNum||getDayNumFor(iso);
+    var hasW=!!(entry.thoughts||entry.promptResponse);
+    var dots='';
+    acts.forEach(function(a){if(DOT_COLORS[a])dots+='<div class="dot" style="background:'+DOT_COLORS[a]+';box-shadow:0 0 4px '+DOT_COLORS[a]+';"></div>';});
+
+    html+='<div class="hist-item'+(hasW?' has-entry':'')+'" onclick="openDetail(\''+iso+'\')">'
+      +'<div class="hist-date-col"><div class="hist-day-num">'+dt.getDate()+'</div><div class="hist-month">'+MONTHS[dt.getMonth()].slice(0,3)+'</div></div>'
+      +'<div class="hist-divider"></div>'
+      +'<div style="flex:1;min-width:0;">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+          +'<div style="font-size:12px;font-weight:700;color:#9b90b0;">'+DAYS[dt.getDay()]+' · Day '+dn+'</div>'
+          +(hasW?'<span style="background:rgba(168,85,247,.2);border:1px solid rgba(168,85,247,.4);color:#c084fc;border-radius:99px;padding:2px 8px;font-size:9px;font-weight:700;">Written</span>':'')
+        +'</div>'
+        +(entry.thoughts?'<div style="font-size:12px;color:#9b90b0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-style:italic;margin-bottom:4px;">'+entry.thoughts+'</div>':'')
+        +(dots?'<div class="dot-row">'+dots+'</div>':'')
+        +(!hasW&&!acts.length?'<div style="font-size:11px;color:#3a3050;font-style:italic;">No entry recorded</div>':'')
+      +'</div>'
+      +'<div style="color:#5a5070;font-size:16px;padding-top:2px;flex-shrink:0;">›</div>'
+      +'</div>';
+  });
+  document.getElementById('historyList').innerHTML=html;
+}
+
+function openDetail(iso){
+  currentISO=iso;
+  var entry=gd('ual_entries',{})[iso]||{}, acts=gd('ual_logs',{})[iso]||[];
+  var dt=new Date(iso+'T12:00:00');
+  var dn=entry.dayNum||getDayNumFor(iso);
+
+  document.getElementById('listView').style.display='none';
+  document.getElementById('detailView').style.display='block';
+
+  // header
+  document.getElementById('detailDate').textContent=isoFriendly(iso);
+  document.getElementById('detailDay').textContent='Day '+dn+' of 291';
+
+  var actsHtml='';
+  acts.forEach(function(a){
+    if(!ACT_LABELS[a])return;
+    actsHtml+='<div class="act-pill"><div class="dot" style="background:'+DOT_COLORS[a]+';"></div><span style="font-size:10px;color:#c084fc;font-weight:700;">'+ACT_ICONS[a]+' '+ACT_LABELS[a]+'</span></div>';
+  });
+  document.getElementById('detailActs').innerHTML=actsHtml;
+
+  // body
+  var sc=SCRIPTURES[(dn-1)%SCRIPTURES.length];
+  var body='';
+
+  // scripture
+  body+='<div style="background:linear-gradient(135deg,#160028,#1e0035);border:1px solid #2a1845;border-left:3px solid #ec4899;border-radius:12px;padding:14px 16px;margin-bottom:12px;">'
+    +'<div style="font-size:10px;font-weight:700;color:#c084fc;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Scripture — Day '+dn+'</div>'
+    +'<div style="font-size:14px;color:#ede8f5;font-style:italic;line-height:1.6;font-family:Georgia,serif;">"'+sc.text+'"</div>'
+    +'<div style="font-size:11px;color:#5a5070;margin-top:4px;">'+sc.ref+'</div>'
+    +'</div>';
+
+  // general thoughts
+  if(entry.thoughts){
+    body+='<div class="sect-label" style="margin-top:0;">General Thoughts</div>'
+      +'<div class="content-card"><div class="content-text">'+entry.thoughts+'</div></div>';
+  }
+
+  // prompt + response
+  if(entry.prompt){
+    body+='<div class="sect-label">Prompt Response</div>'
+      +'<div class="content-card" style="border-left:3px solid #f9a8d4;background:linear-gradient(135deg,#160028,#200020);">'
+        +'<div style="font-size:12px;color:#f9a8d4;font-style:italic;line-height:1.5;margin-bottom:8px;">"'+entry.prompt+'"</div>'
+        +(entry.promptResponse
+          ?'<div class="content-text">'+entry.promptResponse+'</div>'
+          :'<div style="font-size:13px;color:#5a5070;font-style:italic;">No response written.</div>')
+      +'</div>';
+  }
+
+  // media
+  if(entry.media&&entry.mediaType==='audio'){
+    body+='<div class="sect-label">Voice Note</div>'
+      +'<audio controls src="'+entry.media+'" style="width:100%;margin-bottom:12px;"></audio>';
+  }
+  if(entry.media&&entry.mediaType==='video'){
+    body+='<div class="sect-label">Video Note</div>'
+      +'<video controls src="'+entry.media+'" style="width:100%;border-radius:10px;margin-bottom:12px;"></video>';
+  }
+
+  // nothing written
+  if(!entry.thoughts&&!entry.prompt&&!entry.media){
+    body+='<div style="text-align:center;color:#5a5070;font-size:13px;padding:20px 0;font-style:italic;">No written entry for this day — but the calendar shows you were here. That counts.</div>';
+  }
+
+  document.getElementById('detailBody').innerHTML=body;
+  document.getElementById('detailDeleteBtn').style.display=(entry.thoughts||entry.promptResponse)?'block':'none';
+  window.scrollTo(0,0);
+}
+
+function closeDetail(){
+  document.getElementById('listView').style.display='block';
+  document.getElementById('detailView').style.display='none';
+  window.scrollTo(0,0);
+}
+
+function deleteEntry(){
+  if(!confirm('Delete this entry?')) return;
+  var all=gd('ual_entries',{});
+  delete all[currentISO];
+  sd('ual_entries',all);
+  closeDetail();
+  renderList();
+}
+
+renderList();
+</script>
+</body>
+</html>
