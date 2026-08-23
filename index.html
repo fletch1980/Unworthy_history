@@ -41,36 +41,29 @@ body{background:#07000f;font-family:system-ui,sans-serif;min-height:100vh;paddin
 </head>
 <body>
 
-<!-- LIST VIEW -->
 <div id="listView">
   <div class="page-header">
     <h1>📖 History</h1>
     <p>Every day you showed up — written or not.</p>
   </div>
-
   <div class="stats-row">
     <div class="stat-card"><div class="stat-val" id="statTotal">0</div><div class="stat-lbl">Total Days</div></div>
     <div class="stat-card"><div class="stat-val" id="statWritten">0</div><div class="stat-lbl">Written</div></div>
     <div class="stat-card"><div class="stat-val" id="statLetters">0</div><div class="stat-lbl">Letters</div></div>
   </div>
-
   <div id="historyList">
     <div style="text-align:center;color:#5a5070;font-size:13px;padding:40px 0;font-style:italic;">No entries yet. Start writing in Today.</div>
   </div>
 </div>
 
-<!-- DETAIL VIEW -->
 <div id="detailView" style="display:none;">
   <button onclick="closeDetail()" style="background:none;border:none;color:#c084fc;font-size:14px;cursor:pointer;margin-bottom:16px;padding:0;display:block;">← Back to History</button>
-
   <div class="detail-header">
     <div class="detail-date" id="detailDate"></div>
     <div class="detail-day" id="detailDay"></div>
     <div class="acts-row" id="detailActs"></div>
   </div>
-
   <div id="detailBody"></div>
-
   <button id="detailDeleteBtn" onclick="deleteEntry()" style="background:#1a0010;border:1px solid rgba(239,68,68,.3);color:#ef4444;border-radius:10px;font-size:12px;font-weight:700;padding:8px 16px;cursor:pointer;margin-top:8px;">Delete Entry</button>
 </div>
 
@@ -80,19 +73,82 @@ body{background:#07000f;font-family:system-ui,sans-serif;min-height:100vh;paddin
 </nav>
 
 <script>
-var START=new Date('2026-03-15'), TOTAL=291;
+var START=new Date(2026,7,16), TOTAL=291;
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var DOT_COLORS={healing:'#a855f7',creative:'#ec4899',journal:'#06b6d4',letter:'#f59e0b'};
 var ACT_LABELS={healing:'Healing Hour',creative:'Creative Practice',journal:'Journal Entry',letter:'Letter Written'};
 var ACT_ICONS={healing:'📖',creative:'✍🏾',journal:'📝',letter:'✉️'};
 
-var SCRIPTURES=[{ref:'Psalm 139:1-6',text:'You have searched me and known me.'},{ref:'Psalm 139:13-16',text:'You knit me together in my mother\'s womb.'},{ref:'Jeremiah 1:4-5',text:'Before I formed you in the womb I knew you.'},{ref:'Isaiah 44:2',text:'The LORD who made you, who formed you from the womb.'},{ref:'Lamentations 5:7',text:'Our ancestors sinned and we bear their punishment.'},{ref:'Ruth 1:16-17',text:'Where you go I will go.'},{ref:'Psalm 27:10',text:'Though my father and mother forsake me, the LORD will receive me.'},{ref:'Psalm 68:5',text:'A father to the fatherless.'},{ref:'Isaiah 49:15',text:'Can a mother forget the baby at her breast?'},{ref:'Isaiah 49:16',text:'I have engraved you on the palms of my hands.'},{ref:'Zephaniah 3:17',text:'He will rejoice over you with singing.'},{ref:'Matthew 5:14-16',text:'You are the light of the world.'},{ref:'Proverbs 29:25',text:'Fear of man will prove to be a snare.'},{ref:'Deuteronomy 31:6',text:'He will never leave you nor forsake you.'},{ref:'Romans 8:38-39',text:'Nothing can separate us from the love of God.'},{ref:'Romans 8:1',text:'There is now no condemnation.'},{ref:'John 8:1-11',text:'Neither do I condemn you.'},{ref:'1 Cor 13:4-7',text:'Love is patient, love is kind.'},{ref:'Psalm 34:18',text:'The LORD is close to the brokenhearted.'},{ref:'Isaiah 43:4',text:'You are precious and honored in my sight.'},{ref:'1 John 4:18',text:'Perfect love drives out fear.'},{ref:'Isaiah 61:1-3',text:'Beauty for ashes.'}];
+var SC=[
+  {d:[1,5],    ref:'Psalm 139:1-6',       text:'You have searched me and known me.'},
+  {d:[6,12],   ref:'Ruth 1:16-17',         text:'Where you go I will go.'},
+  {d:[13,19],  ref:'Psalm 27:10',          text:'Though my father and mother forsake me, the LORD will receive me.'},
+  {d:[20,26],  ref:'Isaiah 49:15',         text:'Can a mother forget the baby at her breast?'},
+  {d:[27,32],  ref:'Matthew 5:14-16',      text:'You are the light of the world.'},
+  {d:[33,39],  ref:'Deuteronomy 31:6',     text:'He will never leave you nor forsake you.'},
+  {d:[40,47],  ref:'Romans 8:1',           text:'There is now no condemnation.'},
+  {d:[48,54],  ref:'1 Corinthians 13:4-7', text:'Love is patient, love is kind.'},
+  {d:[55,61],  ref:'Psalm 34:18',          text:'The LORD is close to the brokenhearted.'},
+  {d:[62,67],  ref:'Isaiah 43:4',          text:'You are precious and honored in my sight.'},
+  {d:[68,74],  ref:'1 John 4:18',          text:'Perfect love drives out fear.'},
+  {d:[75,81],  ref:'Isaiah 61:1-3',        text:'Beauty for ashes.'},
+  {d:[82,84],  ref:'Genesis 50:20',        text:'You intended to harm me, but God intended it for good.'},
+  {d:[85,92],  ref:'Hosea 2:14',           text:'I will allure her and speak tenderly to her.'},
+  {d:[93,99],  ref:'Philippians 1:6',      text:'He who began a good work in you will carry it on.'},
+  {d:[100,106],ref:'Matthew 6:1-4',        text:'Do not practice your righteousness in front of others.'},
+  {d:[107,114],ref:'Ezekiel 36:26',        text:'I will give you a new heart.'},
+  {d:[115,121],ref:'Psalm 4:2',            text:'How long will you love delusions and seek false gods?'},
+  {d:[122,128],ref:'2 Corinthians 12:9',   text:'My grace is sufficient for you.'},
+  {d:[129,136],ref:'1 Corinthians 6:19-20',text:'You are not your own; you were bought at a price.'},
+  {d:[137,143],ref:'Isaiah 43:18-19',      text:'Forget the former things; see, I am doing a new thing.'},
+  {d:[144,149],ref:'Proverbs 28:1',        text:'The righteous are as bold as a lion.'},
+  {d:[150,156],ref:'Matthew 5:14-16',      text:'You are the light of the world.'},
+  {d:[157,163],ref:'1 John 4:1',           text:'Test the spirits to see whether they are from God.'},
+  {d:[164,170],ref:'Proverbs 3:5-6',       text:'Trust in the LORD with all your heart.'},
+  {d:[171,178],ref:'Psalm 34:18',          text:'The LORD is close to the brokenhearted.'},
+  {d:[179,182],ref:'Psalm 139:23-24',      text:'Search me, God, and know my heart.'},
+  {d:[183,190],ref:'Matthew 11:28-30',     text:'Come to me, all you who are weary and burdened.'},
+  {d:[191,197],ref:'1 Kings 19:11-12',     text:'After the fire came a gentle whisper.'},
+  {d:[198,203],ref:'Habakkuk 2:2',         text:'Write down the revelation and make it plain.'},
+  {d:[204,209],ref:'Psalm 46:10',          text:'Be still, and know that I am God.'},
+  {d:[210,215],ref:'John 8:32',            text:'The truth will set you free.'},
+  {d:[216,221],ref:'Psalm 62:5-6',         text:'Yes, my soul, find rest in God.'},
+  {d:[222,227],ref:'1 John 4:19',          text:'We love because he first loved us.'},
+  {d:[228,232],ref:'Joel 2:25',            text:'I will repay you for the years the locusts have eaten.'},
+  {d:[233,237],ref:'Colossians 3:13',      text:'Forgive as the Lord forgave you.'},
+  {d:[238,242],ref:'Luke 15:20',           text:'While he was still a long way off, his father saw him.'},
+  {d:[243,246],ref:'Isaiah 30:21',         text:'Your ears will hear a voice behind you saying, this is the way.'},
+  {d:[247,249],ref:'Colossians 3:23',      text:'Whatever you do, work at it with all your heart.'},
+  {d:[250,251],ref:'Galatians 6:4',        text:'Each one should test their own actions.'},
+  {d:[252,252],ref:'Romans 6:6-7',         text:'Our old self was crucified with him.'},
+  {d:[253,256],ref:'John 1:16',            text:'Out of his fullness we have all received grace.'},
+  {d:[257,260],ref:'2 Timothy 4:7',        text:'I have fought the good fight, I have finished the race.'},
+  {d:[261,263],ref:'Exodus 35:31-32',      text:'He has filled them with skill to do all kinds of work.'},
+  {d:[264,266],ref:'Mark 12:31',           text:'Love your neighbor as yourself.'},
+  {d:[267,269],ref:'Micah 6:8',            text:'Act justly, love mercy, walk humbly with your God.'},
+  {d:[270,272],ref:'Matthew 10:16',        text:'Be as shrewd as snakes and as innocent as doves.'},
+  {d:[273,275],ref:'Ruth 1:16',            text:'Where you go I will go.'},
+  {d:[276,278],ref:'2 Corinthians 1:4',    text:'He comforts us so we can comfort others.'},
+  {d:[279,280],ref:'Psalm 19:1',           text:'The heavens declare the glory of God.'},
+  {d:[281,282],ref:'Psalm 36:9',           text:'In your light we see light.'},
+  {d:[283,284],ref:'Proverbs 31:25',       text:'She is clothed with strength and dignity.'},
+  {d:[285,286],ref:'Ephesians 3:17-19',    text:'To grasp how wide and long and high and deep is the love of Christ.'},
+  {d:[287,288],ref:'James 1:4',            text:'Let perseverance finish its work.'},
+  {d:[289,290],ref:'Galatians 5:1',        text:'It is for freedom that Christ has set us free.'},
+  {d:[291,291],ref:'Psalm 139:13-16',      text:'You knit me together in my mother\'s womb.'}
+];
+
+function getSC(dn){for(var i=0;i<SC.length;i++){if(dn>=SC[i].d[0]&&dn<=SC[i].d[1])return SC[i];}return SC[0];}
 
 function gd(k,fb){try{var v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function sd(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function isoFriendly(iso){return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});}
-function getDayNumFor(iso){return Math.max(1,Math.min(Math.floor((new Date(iso+'T12:00:00')-START)/86400000)+1,TOTAL));}
+function getDayNumFor(iso){
+  var dt=new Date(iso+'T12:00:00');
+  var start=new Date(START.getFullYear(),START.getMonth(),START.getDate());
+  return Math.max(1,Math.min(Math.floor((dt-start)/86400000)+1,TOTAL));
+}
 
 var currentISO='';
 
@@ -149,7 +205,6 @@ function openDetail(iso){
 
   document.getElementById('listView').style.display='none';
   document.getElementById('detailView').style.display='block';
-
   document.getElementById('detailDate').textContent=isoFriendly(iso);
   document.getElementById('detailDay').textContent='Day '+dn+' of 291';
 
@@ -160,10 +215,8 @@ function openDetail(iso){
   });
   document.getElementById('detailActs').innerHTML=actsHtml;
 
-  var sc=SCRIPTURES[(dn-1)%SCRIPTURES.length];
-  var body='';
-
-  body+='<div style="background:linear-gradient(135deg,#160028,#1e0035);border:1px solid #2a1845;border-left:3px solid #ec4899;border-radius:12px;padding:14px 16px;margin-bottom:12px;">'
+  var sc=getSC(dn);
+  var body='<div style="background:linear-gradient(135deg,#160028,#1e0035);border:1px solid #2a1845;border-left:3px solid #ec4899;border-radius:12px;padding:14px 16px;margin-bottom:12px;">'
     +'<div style="font-size:10px;font-weight:700;color:#c084fc;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Scripture — Day '+dn+'</div>'
     +'<div style="font-size:14px;color:#ede8f5;font-style:italic;line-height:1.6;font-family:Georgia,serif;">"'+sc.text+'"</div>'
     +'<div style="font-size:11px;color:#5a5070;margin-top:4px;">'+sc.ref+'</div>'
@@ -173,26 +226,19 @@ function openDetail(iso){
     body+='<div class="sect-label" style="margin-top:0;">General Thoughts</div>'
       +'<div class="content-card"><div class="content-text">'+entry.thoughts+'</div></div>';
   }
-
   if(entry.prompt){
     body+='<div class="sect-label">Prompt Response</div>'
       +'<div class="content-card" style="border-left:3px solid #f9a8d4;background:linear-gradient(135deg,#160028,#200020);">'
         +'<div style="font-size:12px;color:#f9a8d4;font-style:italic;line-height:1.5;margin-bottom:8px;">"'+entry.prompt+'"</div>'
-        +(entry.promptResponse
-          ?'<div class="content-text">'+entry.promptResponse+'</div>'
-          :'<div style="font-size:13px;color:#5a5070;font-style:italic;">No response written.</div>')
+        +(entry.promptResponse?'<div class="content-text">'+entry.promptResponse+'</div>':'<div style="font-size:13px;color:#5a5070;font-style:italic;">No response written.</div>')
       +'</div>';
   }
-
   if(entry.media&&entry.mediaType==='audio'){
-    body+='<div class="sect-label">Voice Note</div>'
-      +'<audio controls src="'+entry.media+'" style="width:100%;margin-bottom:12px;"></audio>';
+    body+='<div class="sect-label">Voice Note</div><audio controls src="'+entry.media+'" style="width:100%;margin-bottom:12px;"></audio>';
   }
   if(entry.media&&entry.mediaType==='video'){
-    body+='<div class="sect-label">Video Note</div>'
-      +'<video controls src="'+entry.media+'" style="width:100%;border-radius:10px;margin-bottom:12px;"></video>';
+    body+='<div class="sect-label">Video Note</div><video controls src="'+entry.media+'" style="width:100%;border-radius:10px;margin-bottom:12px;"></video>';
   }
-
   if(!entry.thoughts&&!entry.prompt&&!entry.media){
     body+='<div style="text-align:center;color:#5a5070;font-size:13px;padding:20px 0;font-style:italic;">No written entry for this day — but the calendar shows you were here. That counts.</div>';
   }
